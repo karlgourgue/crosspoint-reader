@@ -7,7 +7,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <unordered_set>
+#include <vector>
 
+#include "CrossPointSettings.h"
+#include "LibraryIndexStore.h"
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -81,8 +85,17 @@ void sortFileList(std::vector<std::string>& strs) {
 }
 
 void MyLibraryActivity::loadFiles() {
+  struct Entry {
+    std::string fileName;
+    std::string displayName;
+    bool isDirectory = false;
+    std::string fullPath;
+    uint32_t addedOrder = 0;
+  };
+
   files.clear();
   fileDisplayNames.clear();
+  std::vector<Entry> entries;
 
   auto root = Storage.open(basepath.c_str());
   if (!root || !root.isDirectory()) {
@@ -101,25 +114,112 @@ void MyLibraryActivity::loadFiles() {
     }
 
     if (file.isDirectory()) {
-      files.emplace_back(std::string(name) + "/");
+      Entry entry;
+      entry.fileName = std::string(name) + "/";
+      entry.displayName = entry.fileName;
+      entry.isDirectory = true;
+      entries.push_back(std::move(entry));
     } else {
       auto filename = std::string(name);
       if (StringUtils::checkFileExtension(filename, ".epub") || StringUtils::checkFileExtension(filename, ".xtch") ||
           StringUtils::checkFileExtension(filename, ".xtc") || StringUtils::checkFileExtension(filename, ".txt") ||
           StringUtils::checkFileExtension(filename, ".md")) {
-        files.emplace_back(filename);
+        std::string fullPath = basepath;
+        if (fullPath.empty() || fullPath.back() != '/') {
+          fullPath += "/";
+        }
+        fullPath += filename;
+        LIBRARY_INDEX.touchPath(fullPath);
+
+        Entry entry;
+        entry.fileName = filename;
+        entry.displayName = resolveDisplayName(filename);
+        entry.fullPath = std::move(fullPath);
+        entry.addedOrder = LIBRARY_INDEX.getAddedOrder(entry.fullPath);
+        entries.push_back(std::move(entry));
       }
     }
     file.close();
   }
   root.close();
-  sortFileList(files);
 
-  // Rebuild display names by key lookup to avoid mismatches after sorting.
-  fileDisplayNames.clear();
-  fileDisplayNames.reserve(files.size());
-  for (const auto& fileName : files) {
-    fileDisplayNames.push_back(resolveDisplayName(fileName));
+  const auto shelf = static_cast<CrossPointSettings::LIBRARY_SHELF>(SETTINGS.libraryShelf);
+  std::unordered_set<std::string> recentSet;
+  const auto& recentBooks = RECENT_BOOKS.getBooks();
+  recentSet.reserve(recentBooks.size());
+  for (const auto& book : recentBooks) {
+    recentSet.insert(book.path);
+  }
+
+  std::vector<Entry> filtered;
+  filtered.reserve(entries.size());
+  for (auto& entry : entries) {
+    if (entry.isDirectory || shelf == CrossPointSettings::SHELF_ALL) {
+      filtered.push_back(std::move(entry));
+      continue;
+    }
+
+    const bool isRecent = recentSet.find(entry.fullPath) != recentSet.end();
+    bool include = false;
+    switch (shelf) {
+      case CrossPointSettings::SHELF_CONTINUE_READING:
+      case CrossPointSettings::SHELF_IN_PROGRESS:
+        include = isRecent;
+        break;
+      case CrossPointSettings::SHELF_UNREAD:
+        include = !isRecent;
+        break;
+      case CrossPointSettings::SHELF_RECENTLY_ADDED:
+        include = true;
+        break;
+      case CrossPointSettings::SHELF_ALL:
+      default:
+        include = true;
+        break;
+    }
+    if (include) {
+      filtered.push_back(std::move(entry));
+    }
+  }
+
+  if (shelf == CrossPointSettings::SHELF_RECENTLY_ADDED) {
+    std::sort(filtered.begin(), filtered.end(), [](const Entry& a, const Entry& b) {
+      if (a.isDirectory != b.isDirectory) {
+        return a.isDirectory;
+      }
+      if (a.isDirectory) {
+        return a.fileName < b.fileName;
+      }
+      if (a.addedOrder != b.addedOrder) {
+        return a.addedOrder > b.addedOrder;
+      }
+      return a.displayName < b.displayName;
+    });
+  } else {
+    std::vector<std::string> names;
+    names.reserve(filtered.size());
+    for (const auto& entry : filtered) {
+      names.push_back(entry.fileName);
+    }
+    sortFileList(names);
+
+    std::vector<Entry> sorted;
+    sorted.reserve(filtered.size());
+    for (const auto& nameValue : names) {
+      const auto it = std::find_if(filtered.begin(), filtered.end(),
+                                   [&](const Entry& entry) { return entry.fileName == nameValue; });
+      if (it != filtered.end()) {
+        sorted.push_back(*it);
+      }
+    }
+    filtered = std::move(sorted);
+  }
+
+  files.reserve(filtered.size());
+  fileDisplayNames.reserve(filtered.size());
+  for (const auto& entry : filtered) {
+    files.push_back(entry.fileName);
+    fileDisplayNames.push_back(entry.displayName);
   }
 }
 
@@ -218,8 +318,30 @@ void MyLibraryActivity::render(Activity::RenderLock&&) {
   const auto pageHeight = renderer.getScreenHeight();
   auto metrics = UITheme::getInstance().getMetrics();
 
-  auto folderName = basepath == "/" ? tr(STR_SD_CARD) : basepath.substr(basepath.rfind('/') + 1).c_str();
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, folderName);
+  std::string folderName;
+  if (basepath == "/") {
+    switch (static_cast<CrossPointSettings::LIBRARY_SHELF>(SETTINGS.libraryShelf)) {
+      case CrossPointSettings::SHELF_CONTINUE_READING:
+        folderName = tr(STR_CONTINUE_READING);
+        break;
+      case CrossPointSettings::SHELF_IN_PROGRESS:
+        folderName = tr(STR_IN_PROGRESS);
+        break;
+      case CrossPointSettings::SHELF_UNREAD:
+        folderName = tr(STR_UNREAD);
+        break;
+      case CrossPointSettings::SHELF_RECENTLY_ADDED:
+        folderName = tr(STR_RECENTLY_ADDED);
+        break;
+      case CrossPointSettings::SHELF_ALL:
+      default:
+        folderName = tr(STR_SD_CARD);
+        break;
+    }
+  } else {
+    folderName = basepath.substr(basepath.rfind('/') + 1);
+  }
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, folderName.c_str());
 
   const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
   const int contentHeight = pageHeight - contentTop - metrics.buttonHintsHeight - metrics.verticalSpacing;

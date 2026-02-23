@@ -15,6 +15,7 @@
 #include "KOReaderSyncActivity.h"
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
+#include "ReaderProfileStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 
@@ -70,6 +71,7 @@ void EpubReaderActivity::onEnter() {
   applyReaderOrientation(renderer, SETTINGS.orientation);
 
   epub->setupCacheDir();
+  ReaderProfileStore::loadForCachePath(epub->getCachePath());
 
   FsFile f;
   if (Storage.openFileForRead("ERS", epub->getCachePath() + "/progress.bin", f)) {
@@ -113,6 +115,7 @@ void EpubReaderActivity::onExit() {
 
   APP_STATE.readerActivityLoadCount = 0;
   APP_STATE.saveToFile();
+  ReaderProfileStore::saveForCachePath(epub->getCachePath());
   section.reset();
   epub.reset();
 }

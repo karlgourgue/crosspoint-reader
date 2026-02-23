@@ -122,6 +122,46 @@ class CrossPointSettings {
   // UI Theme
   enum UI_THEME { CLASSIC = 0, LYRA = 1 };
 
+  // Reader preset profiles (PRD-03)
+  enum READER_PRESET {
+    PRESET_COMPACT = 0,
+    PRESET_CLASSIC = 1,
+    PRESET_AIRY = 2,
+    PRESET_LARGE_PRINT = 3,
+    PRESET_NIGHT_COMFORT = 4,
+    READER_PRESET_COUNT
+  };
+
+  // Refresh mode profiles (PRD-03)
+  enum REFRESH_MODE { REFRESH_MODE_FULL = 0, REFRESH_MODE_BALANCED = 1, REFRESH_MODE_AGGRESSIVE = 2, REFRESH_MODE_COUNT };
+
+  // Battery/performance mode profiles (PRD-05)
+  enum PERFORMANCE_MODE {
+    PERF_BATTERY_SAVER = 0,
+    PERF_BALANCED = 1,
+    PERF_PERFORMANCE = 2,
+    PERFORMANCE_MODE_COUNT
+  };
+
+  // Built-in control profiles (PRD-07)
+  enum CONTROL_PROFILE {
+    CONTROL_DEFAULT = 0,
+    CONTROL_LEFT_HANDED = 1,
+    CONTROL_ONE_HAND_COMMUTE = 2,
+    CONTROL_MINIMAL = 3,
+    CONTROL_PROFILE_COUNT
+  };
+
+  // Library shelves (PRD-04)
+  enum LIBRARY_SHELF {
+    SHELF_ALL = 0,
+    SHELF_CONTINUE_READING = 1,
+    SHELF_IN_PROGRESS = 2,
+    SHELF_UNREAD = 3,
+    SHELF_RECENTLY_ADDED = 4,
+    LIBRARY_SHELF_COUNT
+  };
+
   // Sleep screen settings
   uint8_t sleepScreen = DARK;
   // Sleep screen cover mode settings
@@ -172,6 +212,12 @@ class CrossPointSettings {
   uint8_t longPressChapterSkip = 1;
   // UI Theme
   uint8_t uiTheme = LYRA;
+  // Reader and system profiles
+  uint8_t readerPreset = PRESET_CLASSIC;
+  uint8_t refreshMode = REFRESH_MODE_BALANCED;
+  uint8_t performanceMode = PERF_BALANCED;
+  uint8_t controlProfile = CONTROL_DEFAULT;
+  uint8_t libraryShelf = SHELF_ALL;
   // Sunlight fading compensation
   uint8_t fadingFix = 0;
   // Use book's embedded CSS styles for EPUB rendering (1 = enabled, 0 = disabled)

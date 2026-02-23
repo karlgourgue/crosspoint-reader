@@ -23,11 +23,28 @@ Inkforge tracks upstream CrossPoint while shipping opinionated defaults and iter
   - Margin: 10
   - Hyphenation: enabled
   - Bionic Reading: enabled by default
+- Added selectable reader presets:
+  - Compact
+  - Classic
+  - Airy
+  - Large Print
+  - Night Comfort
+- Added per-book reader profile persistence for EPUB/TXT cache paths.
+- Added refresh mode selector:
+  - Full Each Page
+  - Balanced
+  - Aggressive Partial
 
 ### PRD-04 (Library Intelligence) - Phase 1
 
 - Recent books capacity increased from 10 to 20.
 - Home screen now prioritizes the last active book first to improve Continue Reading behavior.
+- Added shelf filtering in library browser:
+  - All
+  - Continue Reading
+  - In Progress
+  - Unread
+  - Recently Added
 
 ### PRD-05 (Battery/Performance) - Phase 1
 
@@ -35,6 +52,10 @@ Inkforge tracks upstream CrossPoint while shipping opinionated defaults and iter
   - Full refresh every 10 pages
   - Auto-sleep timeout: 15 minutes
   - Hide battery percentage in reader only
+- Added user-selectable performance modes:
+  - Battery Saver
+  - Balanced
+  - Performance
 
 ### PRD-07 (Controls) - Phase 1
 
@@ -42,6 +63,12 @@ Inkforge tracks upstream CrossPoint while shipping opinionated defaults and iter
   - Side button layout: Prev/Next
   - Long-press chapter skip: enabled
   - Front mapping reset to safe default layout
+- Added built-in control profiles:
+  - Default
+  - Left-handed
+  - One-hand Commute
+  - Minimal
+- Added button test screen for live input verification.
 
 ### Branding
 
@@ -55,8 +82,7 @@ Inkforge defaults are only applied when `/.crosspoint/settings.bin` is missing o
 
 ## Next Phases
 
-- PRD-03: Add explicit typography preset selector and per-book profile persistence.
 - PRD-08: Expand bionic algorithm beyond ASCII tokenization for multilingual text.
-- PRD-04: Add shelves, tags, and richer ranking signals.
-- PRD-05: Add user-selectable mode switch (Battery Saver/Balanced/Performance).
+- PRD-04: Add tags, collections, and richer ranking signals.
+- PRD-05: Add impact estimate copy in UI and deeper runtime telemetry.
 - PRD-07: Add context-specific button profiles and gesture binding UI.

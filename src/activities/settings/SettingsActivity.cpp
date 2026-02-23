@@ -4,9 +4,11 @@
 #include <Logging.h>
 
 #include "ButtonRemapActivity.h"
+#include "ButtonTestActivity.h"
 #include "CalibreSettingsActivity.h"
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
+#include "InkforgeModes.h"
 #include "KOReaderSettingsActivity.h"
 #include "LanguageSelectActivity.h"
 #include "MappedInputManager.h"
@@ -45,6 +47,7 @@ void SettingsActivity::onEnter() {
   // Append device-only ACTION items
   controlsSettings.insert(controlsSettings.begin(),
                           SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+  controlsSettings.push_back(SettingInfo::Action(StrId::STR_BUTTON_TEST, SettingAction::ButtonTest));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_BROWSER, SettingAction::OPDSBrowser));
@@ -154,6 +157,16 @@ void SettingsActivity::toggleCurrentSetting() {
   } else if (setting.type == SettingType::ENUM && setting.valuePtr != nullptr) {
     const uint8_t currentValue = SETTINGS.*(setting.valuePtr);
     SETTINGS.*(setting.valuePtr) = (currentValue + 1) % static_cast<uint8_t>(setting.enumValues.size());
+
+    if (setting.nameId == StrId::STR_READER_PRESET) {
+      InkforgeModes::applyReaderPreset(SETTINGS, SETTINGS.readerPreset);
+    } else if (setting.nameId == StrId::STR_REFRESH_MODE) {
+      InkforgeModes::applyRefreshMode(SETTINGS, SETTINGS.refreshMode);
+    } else if (setting.nameId == StrId::STR_PERFORMANCE_MODE) {
+      InkforgeModes::applyPerformanceMode(SETTINGS, SETTINGS.performanceMode);
+    } else if (setting.nameId == StrId::STR_CONTROL_PROFILE) {
+      InkforgeModes::applyControlProfile(SETTINGS, SETTINGS.controlProfile);
+    }
   } else if (setting.type == SettingType::VALUE && setting.valuePtr != nullptr) {
     const int8_t currentValue = SETTINGS.*(setting.valuePtr);
     if (currentValue + setting.valueRange.step > setting.valueRange.max) {
@@ -198,6 +211,9 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::Language:
         enterSubActivity(new LanguageSelectActivity(renderer, mappedInput, onComplete));
+        break;
+      case SettingAction::ButtonTest:
+        enterSubActivity(new ButtonTestActivity(renderer, mappedInput, onComplete));
         break;
       case SettingAction::None:
         // Do nothing

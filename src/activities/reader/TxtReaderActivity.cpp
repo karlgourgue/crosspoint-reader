@@ -11,6 +11,7 @@
 #include "CrossPointState.h"
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
+#include "ReaderProfileStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 
@@ -51,6 +52,7 @@ void TxtReaderActivity::onEnter() {
   }
 
   txt->setupCacheDir();
+  ReaderProfileStore::loadForCachePath(txt->getCachePath());
 
   // Save current txt as last opened file and add to recent books
   auto filePath = txt->getPath();
@@ -73,6 +75,7 @@ void TxtReaderActivity::onExit() {
   currentPageLines.clear();
   APP_STATE.readerActivityLoadCount = 0;
   APP_STATE.saveToFile();
+  ReaderProfileStore::saveForCachePath(txt->getCachePath());
   txt.reset();
 }
 

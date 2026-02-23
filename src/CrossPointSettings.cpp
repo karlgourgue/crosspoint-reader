@@ -135,6 +135,11 @@ uint8_t CrossPointSettings::writeSettings(FsFile& file, bool count_only) const {
   writer.writeItem(file, fadingFix);
   writer.writeItem(file, embeddedStyle);
   writer.writeItem(file, bionicReadingMode);
+  writer.writeItem(file, readerPreset);
+  writer.writeItem(file, refreshMode);
+  writer.writeItem(file, performanceMode);
+  writer.writeItem(file, controlProfile);
+  writer.writeItem(file, libraryShelf);
   // New fields need to be added at end for backward compatibility
 
   return writer.item_count;
@@ -263,6 +268,16 @@ bool CrossPointSettings::loadFromFile() {
     serialization::readPod(inputFile, embeddedStyle);
     if (++settingsRead >= fileSettingsCount) break;
     serialization::readPod(inputFile, bionicReadingMode);
+    if (++settingsRead >= fileSettingsCount) break;
+    readAndValidate(inputFile, readerPreset, READER_PRESET_COUNT);
+    if (++settingsRead >= fileSettingsCount) break;
+    readAndValidate(inputFile, refreshMode, REFRESH_MODE_COUNT);
+    if (++settingsRead >= fileSettingsCount) break;
+    readAndValidate(inputFile, performanceMode, PERFORMANCE_MODE_COUNT);
+    if (++settingsRead >= fileSettingsCount) break;
+    readAndValidate(inputFile, controlProfile, CONTROL_PROFILE_COUNT);
+    if (++settingsRead >= fileSettingsCount) break;
+    readAndValidate(inputFile, libraryShelf, LIBRARY_SHELF_COUNT);
     if (++settingsRead >= fileSettingsCount) break;
     // New fields added at end for backward compatibility
   } while (false);
