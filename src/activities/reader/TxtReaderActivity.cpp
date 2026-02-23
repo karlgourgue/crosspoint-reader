@@ -6,6 +6,7 @@
 #include <Serialization.h>
 #include <Utf8.h>
 
+#include "BionicReading.h"
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "MappedInputManager.h"
@@ -384,6 +385,37 @@ void TxtReaderActivity::renderPage() {
 
   const int lineHeight = renderer.getLineHeight(cachedFontId);
   const int contentWidth = viewportWidth;
+  std::vector<BionicReading::Segment> bionicSegments;
+
+  auto lineWidthForRendering = [&](const std::string& line) -> int {
+    if (!SETTINGS.bionicReadingMode || line.empty()) {
+      return renderer.getTextWidth(cachedFontId, line.c_str());
+    }
+    BionicReading::splitLine(line, bionicSegments);
+    int width = 0;
+    for (const auto& segment : bionicSegments) {
+      if (segment.text.empty()) continue;
+      const auto style = segment.bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+      width += renderer.getTextWidth(cachedFontId, segment.text.c_str(), style);
+    }
+    return width;
+  };
+
+  auto drawLine = [&](const int x, const int y, const std::string& line) {
+    if (!SETTINGS.bionicReadingMode || line.empty()) {
+      renderer.drawText(cachedFontId, x, y, line.c_str());
+      return;
+    }
+
+    BionicReading::splitLine(line, bionicSegments);
+    int cursorX = x;
+    for (const auto& segment : bionicSegments) {
+      if (segment.text.empty()) continue;
+      const auto style = segment.bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+      renderer.drawText(cachedFontId, cursorX, y, segment.text.c_str(), true, style);
+      cursorX += renderer.getTextWidth(cachedFontId, segment.text.c_str(), style);
+    }
+  };
 
   // Render text lines with alignment
   auto renderLines = [&]() {
@@ -399,12 +431,12 @@ void TxtReaderActivity::renderPage() {
             // x already set to left margin
             break;
           case CrossPointSettings::CENTER_ALIGN: {
-            int textWidth = renderer.getTextWidth(cachedFontId, line.c_str());
+            int textWidth = lineWidthForRendering(line);
             x = orientedMarginLeft + (contentWidth - textWidth) / 2;
             break;
           }
           case CrossPointSettings::RIGHT_ALIGN: {
-            int textWidth = renderer.getTextWidth(cachedFontId, line.c_str());
+            int textWidth = lineWidthForRendering(line);
             x = orientedMarginLeft + contentWidth - textWidth;
             break;
           }
@@ -414,7 +446,7 @@ void TxtReaderActivity::renderPage() {
             break;
         }
 
-        renderer.drawText(cachedFontId, x, y, line.c_str());
+        drawLine(x, y, line);
       }
       y += lineHeight;
     }

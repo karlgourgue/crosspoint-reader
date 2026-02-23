@@ -9,6 +9,7 @@
 #include <limits>
 #include <vector>
 
+#include "BionicReading.h"
 #include "hyphenation/Hyphenator.h"
 
 constexpr int MAX_COST = std::numeric_limits<int>::max();
@@ -56,11 +57,28 @@ void ParsedText::addWord(std::string word, const EpdFontFamily::Style fontStyle,
                          const bool attachToPrevious) {
   if (word.empty()) return;
 
-  words.push_back(std::move(word));
   EpdFontFamily::Style combinedStyle = fontStyle;
   if (underline) {
     combinedStyle = static_cast<EpdFontFamily::Style>(combinedStyle | EpdFontFamily::UNDERLINE);
   }
+
+  if (bionicReadingEnabled) {
+    std::string prefix;
+    std::string suffix;
+    if (BionicReading::splitWord(word, prefix, suffix)) {
+      const auto boldStyle = static_cast<EpdFontFamily::Style>(combinedStyle | EpdFontFamily::BOLD);
+      words.push_back(std::move(prefix));
+      wordStyles.push_back(boldStyle);
+      wordContinues.push_back(attachToPrevious);
+
+      words.push_back(std::move(suffix));
+      wordStyles.push_back(combinedStyle);
+      wordContinues.push_back(true);
+      return;
+    }
+  }
+
+  words.push_back(std::move(word));
   wordStyles.push_back(combinedStyle);
   wordContinues.push_back(attachToPrevious);
 }

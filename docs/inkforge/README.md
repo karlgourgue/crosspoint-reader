@@ -10,6 +10,7 @@ Inkforge tracks upstream CrossPoint while shipping opinionated defaults and iter
 - PRD-04 Library Intelligence
 - PRD-05 Battery and Performance Modes
 - PRD-07 Contextual Button Profiles
+- PRD-08 Bionic Reading Mode
 
 ## What Is Implemented in v1
 
@@ -21,6 +22,7 @@ Inkforge tracks upstream CrossPoint while shipping opinionated defaults and iter
   - Line spacing: Wide
   - Margin: 10
   - Hyphenation: enabled
+  - Bionic Reading: enabled by default
 
 ### PRD-04 (Library Intelligence) - Phase 1
 
@@ -54,6 +56,7 @@ Inkforge defaults are only applied when `/.crosspoint/settings.bin` is missing o
 ## Next Phases
 
 - PRD-03: Add explicit typography preset selector and per-book profile persistence.
+- PRD-08: Expand bionic algorithm beyond ASCII tokenization for multilingual text.
 - PRD-04: Add shelves, tags, and richer ranking signals.
 - PRD-05: Add user-selectable mode switch (Battery Saver/Balanced/Performance).
 - PRD-07: Add context-specific button profiles and gesture binding UI.

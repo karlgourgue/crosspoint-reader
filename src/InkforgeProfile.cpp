@@ -8,6 +8,7 @@ void applyV1Defaults(CrossPointSettings& settings) {
   settings.lineSpacing = CrossPointSettings::WIDE;
   settings.screenMargin = 10;
   settings.hyphenationEnabled = 1;
+  settings.bionicReadingMode = 1;
   settings.embeddedStyle = 1;
 
   // PRD-05: balanced power/performance defaults
@@ -25,4 +26,3 @@ void applyV1Defaults(CrossPointSettings& settings) {
   settings.frontButtonRight = CrossPointSettings::FRONT_HW_RIGHT;
 }
 }  // namespace InkforgeProfile
-
