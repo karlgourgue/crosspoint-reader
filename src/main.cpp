@@ -15,6 +15,7 @@
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "KOReaderCredentialStore.h"
+#include "InkforgeProfile.h"
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
 #include "activities/boot_sleep/BootActivity.h"
@@ -30,6 +31,10 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "util/ButtonNavigator.h"
+
+#ifndef CROSSPOINT_FLAVOR
+#define CROSSPOINT_FLAVOR "CrossPoint"
+#endif
 
 HalDisplay display;
 HalGPIO gpio;
@@ -304,7 +309,12 @@ void setup() {
     return;
   }
 
-  SETTINGS.loadFromFile();
+  const bool loadedSettings = SETTINGS.loadFromFile();
+  if (!loadedSettings) {
+    InkforgeProfile::applyV1Defaults(SETTINGS);
+    SETTINGS.saveToFile();
+    LOG_INF("MAIN", "Applied %s v1 defaults", CROSSPOINT_FLAVOR);
+  }
   I18N.loadSettings();
   KOREADER_STORE.loadFromFile();
   UITheme::getInstance().reload();
@@ -329,7 +339,7 @@ void setup() {
   }
 
   // First serial output only here to avoid timing inconsistencies for power button press duration verification
-  LOG_DBG("MAIN", "Starting CrossPoint version " CROSSPOINT_VERSION);
+  LOG_DBG("MAIN", "Starting %s firmware version %s", CROSSPOINT_FLAVOR, CROSSPOINT_VERSION);
 
   setupDisplayAndFonts();
 

@@ -17,6 +17,10 @@
 #include "html/SettingsPageHtml.generated.h"
 #include "util/StringUtils.h"
 
+#ifndef CROSSPOINT_FLAVOR
+#define CROSSPOINT_FLAVOR "CrossPoint"
+#endif
+
 namespace {
 // Folders/files to hide from the web interface file browser
 // Note: Items starting with "." are automatically hidden
@@ -315,6 +319,7 @@ void CrossPointWebServer::handleStatus() const {
 
   JsonDocument doc;
   doc["version"] = CROSSPOINT_VERSION;
+  doc["flavor"] = CROSSPOINT_FLAVOR;
   doc["ip"] = ipAddr;
   doc["mode"] = apMode ? "AP" : "STA";
   doc["rssi"] = apMode ? 0 : WiFi.RSSI();

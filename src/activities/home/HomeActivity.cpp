@@ -36,6 +36,16 @@ void HomeActivity::loadRecentBooks(int maxBooks) {
   const auto& books = RECENT_BOOKS.getBooks();
   recentBooks.reserve(std::min(static_cast<int>(books.size()), maxBooks));
 
+  // Phase-1 ranking: pin last active book first to strengthen "Continue Reading".
+  if (!APP_STATE.openEpubPath.empty()) {
+    for (const RecentBook& book : books) {
+      if (book.path == APP_STATE.openEpubPath && Storage.exists(book.path.c_str())) {
+        recentBooks.push_back(book);
+        break;
+      }
+    }
+  }
+
   for (const RecentBook& book : books) {
     // Limit to maximum number of recent books
     if (recentBooks.size() >= maxBooks) {
@@ -44,6 +54,10 @@ void HomeActivity::loadRecentBooks(int maxBooks) {
 
     // Skip if file no longer exists
     if (!Storage.exists(book.path.c_str())) {
+      continue;
+    }
+
+    if (!APP_STATE.openEpubPath.empty() && book.path == APP_STATE.openEpubPath) {
       continue;
     }
 
