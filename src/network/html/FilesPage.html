@@ -832,7 +832,9 @@
         if (!a.isDirectory && b.isDirectory) return 1;
         if (a.isEpub && !b.isEpub) return -1;
         if (!a.isEpub && b.isEpub) return 1;
-        return a.name.localeCompare(b.name);
+        const aLabel = a.displayName || a.name;
+        const bLabel = b.displayName || b.name;
+        return aLabel.localeCompare(bLabel);
       });
 
       sortedFiles.forEach(file => {
@@ -842,7 +844,8 @@
           folderPath += file.name;
 
           fileTableContent += '<tr class="folder-row">';
-          fileTableContent += `<td><span class="file-icon">📁</span><a href="/files?path=${encodeURIComponent(folderPath)}" class="folder-link">${escapeHtml(file.name)}</a><span class="folder-badge">FOLDER</span></td>`;
+          const folderLabel = file.displayName || file.name;
+          fileTableContent += `<td><span class="file-icon">📁</span><a href="/files?path=${encodeURIComponent(folderPath)}" class="folder-link">${escapeHtml(folderLabel)}</a><span class="folder-badge">FOLDER</span></td>`;
           fileTableContent += '<td>Folder</td>';
           fileTableContent += '<td>-</td>';
           fileTableContent += `<td class="actions-col"><div class="action-icon-group"><button class="delete-btn" onclick="openDeleteModal('${file.name.replaceAll("'", "\\'")}', '${folderPath.replaceAll("'", "\\'")}', true)" title="Delete folder">🗑️</button></div></td>`;
@@ -851,9 +854,10 @@
           let filePath = currentPath;
           if (!filePath.endsWith("/")) filePath += "/";
           filePath += file.name;
+          const fileLabel = file.displayName || file.name;
 
           fileTableContent += `<tr class="${file.isEpub ? 'epub-file' : ''}">`;
-          fileTableContent += `<td><span class="file-icon">${file.isEpub ? '📗' : '📄'}</span>${escapeHtml(file.name)}`;
+          fileTableContent += `<td><span class="file-icon">${file.isEpub ? '📗' : '📄'}</span>${escapeHtml(fileLabel)}`;
           if (file.isEpub) fileTableContent += '<span class="epub-badge">EPUB</span>';
           fileTableContent += '</td>';
           fileTableContent += `<td>${file.name.split('.').pop().toUpperCase()}</td>`;

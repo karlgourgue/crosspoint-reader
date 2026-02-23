@@ -16,6 +16,7 @@ class MyLibraryActivity final : public Activity {
   // Files state
   std::string basepath = "/";
   std::vector<std::string> files;
+  std::vector<std::string> fileDisplayNames;
 
   // Callbacks
   const std::function<void(const std::string& path)> onSelectBook;
@@ -23,6 +24,7 @@ class MyLibraryActivity final : public Activity {
 
   // Data loading
   void loadFiles();
+  std::string resolveDisplayName(const std::string& filename) const;
   size_t findEntry(const std::string& name) const;
 
  public:

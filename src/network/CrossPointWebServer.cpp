@@ -9,6 +9,7 @@
 #include <esp_task_wdt.h>
 
 #include <algorithm>
+#include <cctype>
 
 #include "CrossPointSettings.h"
 #include "SettingsList.h"
@@ -81,6 +82,56 @@ bool isProtectedItemName(const String& name) {
     }
   }
   return false;
+}
+
+bool looksLikeHashedEpubName(const String& filename) {
+  if (!filename.endsWith(".epub")) {
+    return false;
+  }
+  if (filename.length() != 37) {
+    return false;
+  }
+  for (size_t i = 0; i < 32; i++) {
+    if (!std::isxdigit(static_cast<unsigned char>(filename[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+String resolveDisplayName(const String& currentPath, const FileInfo& info) {
+  if (info.isDirectory || !info.isEpub) {
+    return info.name;
+  }
+
+  String lowerName = info.name;
+  lowerName.toLowerCase();
+  if (!looksLikeHashedEpubName(lowerName)) {
+    return info.name;
+  }
+
+  String fullPath = currentPath;
+  if (fullPath.isEmpty() || !fullPath.endsWith("/")) {
+    fullPath += "/";
+  }
+  fullPath += info.name;
+
+  Epub epub(fullPath.c_str(), "/.crosspoint");
+  if (!epub.load(false, true)) {
+    return info.name;
+  }
+
+  const std::string title = epub.getTitle();
+  if (title.empty()) {
+    return info.name;
+  }
+
+  const std::string author = epub.getAuthor();
+  if (author.empty()) {
+    return String(title.c_str());
+  }
+
+  return String((title + " - " + author).c_str());
 }
 }  // namespace
 
@@ -422,9 +473,10 @@ void CrossPointWebServer::handleFileListData() const {
   bool seenFirst = false;
   JsonDocument doc;
 
-  scanFiles(currentPath.c_str(), [this, &output, &doc, seenFirst](const FileInfo& info) mutable {
+  scanFiles(currentPath.c_str(), [this, &output, &doc, currentPath, seenFirst](const FileInfo& info) mutable {
     doc.clear();
     doc["name"] = info.name;
+    doc["displayName"] = resolveDisplayName(currentPath, info);
     doc["size"] = info.size;
     doc["isDirectory"] = info.isDirectory;
     doc["isEpub"] = info.isEpub;

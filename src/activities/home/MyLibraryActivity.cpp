@@ -1,10 +1,12 @@
 #include "MyLibraryActivity.h"
 
+#include <Epub.h>
 #include <GfxRenderer.h>
 #include <HalStorage.h>
 #include <I18n.h>
 
 #include <algorithm>
+#include <cctype>
 
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
@@ -13,6 +15,17 @@
 
 namespace {
 constexpr unsigned long GO_HOME_MS = 1000;
+
+bool looksLikeHashedEpubName(const std::string& filename) {
+  if (!StringUtils::checkFileExtension(filename, ".epub")) {
+    return false;
+  }
+  const std::string stem = filename.substr(0, filename.size() - 5);
+  if (stem.size() != 32) {
+    return false;
+  }
+  return std::all_of(stem.begin(), stem.end(), [](const char ch) { return std::isxdigit(static_cast<unsigned char>(ch)); });
+}
 }  // namespace
 
 void sortFileList(std::vector<std::string>& strs) {
@@ -69,6 +82,7 @@ void sortFileList(std::vector<std::string>& strs) {
 
 void MyLibraryActivity::loadFiles() {
   files.clear();
+  fileDisplayNames.clear();
 
   auto root = Storage.open(basepath.c_str());
   if (!root || !root.isDirectory()) {
@@ -100,6 +114,13 @@ void MyLibraryActivity::loadFiles() {
   }
   root.close();
   sortFileList(files);
+
+  // Rebuild display names by key lookup to avoid mismatches after sorting.
+  fileDisplayNames.clear();
+  fileDisplayNames.reserve(files.size());
+  for (const auto& fileName : files) {
+    fileDisplayNames.push_back(resolveDisplayName(fileName));
+  }
 }
 
 void MyLibraryActivity::onEnter() {
@@ -114,6 +135,7 @@ void MyLibraryActivity::onEnter() {
 void MyLibraryActivity::onExit() {
   Activity::onExit();
   files.clear();
+  fileDisplayNames.clear();
 }
 
 void MyLibraryActivity::loop() {
@@ -206,7 +228,7 @@ void MyLibraryActivity::render(Activity::RenderLock&&) {
   } else {
     GUI.drawList(
         renderer, Rect{0, contentTop, pageWidth, contentHeight}, files.size(), selectorIndex,
-        [this](int index) { return files[index]; }, nullptr, nullptr, nullptr);
+        [this](int index) { return fileDisplayNames[index]; }, nullptr, nullptr, nullptr);
   }
 
   // Help text
@@ -221,4 +243,36 @@ size_t MyLibraryActivity::findEntry(const std::string& name) const {
   for (size_t i = 0; i < files.size(); i++)
     if (files[i] == name) return i;
   return 0;
+}
+
+std::string MyLibraryActivity::resolveDisplayName(const std::string& filename) const {
+  if (filename.empty()) {
+    return filename;
+  }
+
+  if (filename.back() == '/') {
+    return filename;
+  }
+
+  if (!looksLikeHashedEpubName(filename)) {
+    return filename;
+  }
+
+  std::string fullPath = basepath;
+  if (fullPath.empty() || fullPath.back() != '/') {
+    fullPath += "/";
+  }
+  fullPath += filename;
+
+  Epub epub(fullPath, "/.crosspoint");
+  if (!epub.load(false, true)) {
+    return filename;
+  }
+
+  const auto title = epub.getTitle();
+  if (title.empty()) {
+    return filename;
+  }
+  const auto author = epub.getAuthor();
+  return author.empty() ? title : (title + " - " + author);
 }
